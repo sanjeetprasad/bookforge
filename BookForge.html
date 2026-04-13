@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BookForge — Your Book Intelligence Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- PDF.js loaded dynamically in JS to ensure worker is set correctly -->
+<style>
+:root{
+  --cream:#FDF8F0;--warm:#FEFCF7;--sage:#7C9A7E;--sage-l:#A8C5AA;--sage-d:#4A6B4C;
+  --amber:#E8A838;--amber-l:#F5C96A;--amber-d:#C47E10;--terra:#D4704A;--rose:#C4869A;
+  --sky:#6EA8C8;--sky-l:#A8CDE0;--ink:#2C2416;--inkm:#5C4F3A;--inkl:#8C7D68;
+  --border:#E8DDD0;--sh:rgba(44,36,22,.08);--shm:rgba(44,36,22,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 10% 20%,rgba(124,154,126,.12) 0%,transparent 50%),
+  radial-gradient(ellipse at 90% 80%,rgba(232,168,56,.1) 0%,transparent 50%);}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(253,248,240,.94);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:62px;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--sage),var(--amber));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo-text{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;letter-spacing:-.5px;}
+.logo-text span{color:var(--sage-d);}
+.hdr-r{display:flex;align-items:center;gap:8px;}
+.book-pill{display:none;font-size:.76rem;color:var(--sage-d);font-weight:600;background:rgba(124,154,126,.1);padding:4px 10px;border-radius:8px;border:1px solid var(--sage-l);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-set{background:none;border:1.5px solid var(--border);border-radius:10px;padding:6px 13px;font-family:'DM Sans',sans-serif;font-size:.81rem;font-weight:500;color:var(--inkm);cursor:pointer;transition:all .2s;}
+.btn-set:hover{border-color:var(--sage);color:var(--sage-d);}
+
+/* TABS */
+.nav-tabs{display:flex;gap:3px;padding:.9rem 1.5rem 0;border-bottom:1px solid var(--border);background:var(--warm);position:relative;z-index:10;overflow-x:auto;scrollbar-width:none;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.nav-tab{padding:9px 14px 11px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:500;color:var(--inkl);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all .2s;border-radius:7px 7px 0 0;}
+.nav-tab:hover{color:var(--inkm);background:rgba(124,154,126,.05);}
+.nav-tab.active{color:var(--sage-d);border-bottom-color:var(--sage);font-weight:600;}
+
+/* MAIN */
+.main{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:1.75rem 1.5rem;}
+.tab-panel{display:none;}.tab-panel.active{display:block;}
+
+/* CARDS */
+.card{background:var(--warm);border:1px solid var(--border);border-radius:18px;padding:1.5rem;box-shadow:0 2px 12px var(--sh);margin-bottom:1.25rem;}
+.card-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+
+/* INPUTS */
+input[type=text],input[type=password],input[type=number],textarea,select{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);background:var(--cream);outline:none;transition:border-color .2s,box-shadow .2s;}
+input:focus,textarea:focus,select:focus{border-color:var(--sage);box-shadow:0 0 0 3px rgba(124,154,126,.15);}
+textarea{resize:vertical;min-height:80px;}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 18px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn-p{background:linear-gradient(135deg,var(--sage),var(--sage-d));color:#fff;}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(74,107,76,.3);}
+.btn-a{background:linear-gradient(135deg,var(--amber),var(--amber-d));color:#fff;}
+.btn-a:hover{transform:translateY(-1px);}
+.btn-sky{background:linear-gradient(135deg,var(--sky),#4A88B0);color:#fff;}
+.btn-g{background:transparent;border:1.5px solid var(--border);color:var(--inkm);}
+.btn-g:hover{border-color:var(--sage);color:var(--sage-d);background:rgba(124,154,126,.06);}
+.btn-sm{padding:6px 12px;font-size:.78rem;border-radius:8px;}
+
+/* STATUS */
+.loading-bar{height:3px;background:linear-gradient(90deg,var(--sage),var(--amber),var(--terra));background-size:200% 100%;animation:lm 1.2s linear infinite;border-radius:2px;margin-bottom:1rem;display:none;}
+.loading-bar.active{display:block;}
+@keyframes lm{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.smsg{padding:9px 13px;border-radius:9px;font-size:.83rem;margin-bottom:1rem;display:none;}
+.smsg.show{display:block;}
+.s-ok{background:rgba(124,154,126,.12);color:var(--sage-d);border:1px solid rgba(124,154,126,.3);}
+.s-err{background:rgba(212,112,74,.1);color:var(--terra);border:1px solid rgba(212,112,74,.25);}
+.s-inf{background:rgba(110,168,200,.1);color:#3A7898;border:1px solid rgba(110,168,200,.25);}
+.s-warn{background:rgba(232,168,56,.1);color:var(--amber-d);border:1px solid rgba(232,168,56,.25);}
+
+/* SEARCH */
+.sh-hero{text-align:center;padding:2.5rem 1rem 2rem;}
+.sh-hero h1{font-family:'Playfair Display',serif;font-size:2.1rem;font-weight:900;line-height:1.2;margin-bottom:.5rem;}
+.sh-hero h1 em{color:var(--sage-d);font-style:italic;}
+.sh-hero p{color:var(--inkl);font-size:.92rem;margin-bottom:1.6rem;}
+.sbox{display:flex;gap:10px;max-width:600px;margin:0 auto;}
+.sbox input{flex:1;font-size:.98rem;padding:12px 15px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.chip{padding:4px 11px;border-radius:18px;font-size:.77rem;font-weight:500;border:1.5px solid var(--border);color:var(--inkm);cursor:pointer;background:var(--cream);transition:all .15s;}
+.chip:hover,.chip.active{background:var(--sage);border-color:var(--sage);color:#fff;}
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:1rem;margin-top:1.5rem;}
+.bcard{background:var(--warm);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .25s;box-shadow:0 2px 8px var(--sh);}
+.bcard:hover{transform:translateY(-3px);box-shadow:0 8px 24px var(--shm);border-color:var(--sage-l);}
+.bcov{width:100%;height:140px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;position:relative;}
+.bcov .free-tag{position:absolute;top:8px;right:8px;background:var(--sage-d);color:#fff;font-size:.63rem;font-weight:700;padding:2px 6px;border-radius:4px;}
+.binfo{padding:10px 11px;}
+.btit{font-family:'Playfair Display',serif;font-size:.82rem;font-weight:700;line-height:1.3;margin-bottom:2px;}
+.baut{font-size:.73rem;color:var(--inkl);margin-bottom:6px;}
+.bbadge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:.68rem;font-weight:700;}
+.bb-free{background:rgba(124,154,126,.15);color:var(--sage-d);}
+.bb-paid{background:rgba(232,168,56,.15);color:var(--amber-d);}
+.cheap-opts{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;}
+.cheap-opt{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1.5px solid var(--border);background:var(--cream);font-size:.8rem;font-weight:500;color:var(--inkm);text-decoration:none;transition:all .2s;}
+.cheap-opt:hover{border-color:var(--amber);color:var(--amber-d);}
+
+/* ── PDF VIEWER (full visual) ── */
+.pdf-viewer-wrap{display:none;position:fixed;inset:0;z-index:500;background:#2C2416;flex-direction:column;}
+.pdf-viewer-wrap.open{display:flex;}
+.pdf-vhdr{height:54px;background:rgba(44,36,22,.95);display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.1);}
+.pdf-vtitle{color:#FDF8F0;font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;}
+.pdf-vmeta{color:rgba(253,248,240,.55);font-size:.73rem;margin-top:1px;}
+.pdf-vhdr-r{display:flex;align-items:center;gap:7px;}
+.pvbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#FDF8F0;border-radius:8px;padding:5px 11px;font-family:'DM Sans',sans-serif;font-size:.77rem;font-weight:500;cursor:pointer;transition:all .2s;}
+.pvbtn:hover{background:rgba(255,255,255,.18);}
+.pvbtn.act{background:var(--sage-d);border-color:var(--sage);}
+
+/* PDF audio bar */
+.pdf-audio-bar{background:rgba(44,36,22,.9);border-bottom:1px solid rgba(255,255,255,.08);padding:.55rem 1.2rem;display:none;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0;}
+.pdf-audio-bar.show{display:flex;}
+.pa-play{width:34px;height:34px;border-radius:50%;background:var(--sage-d);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.pa-play:hover{transform:scale(1.08);background:var(--sage);}
+.pa-vsel{flex:1;min-width:110px;font-size:.78rem;padding:5px 9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#FDF8F0;border-radius:7px;}
+.pa-ssel{width:68px;font-size:.78rem;padding:5px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#FDF8F0;border-radius:7px;}
+.pa-lbl{font-size:.74rem;color:rgba(253,248,240,.7);font-weight:500;}
+.padot{width:6px;height:6px;border-radius:50%;background:var(--sage-l);animation:pulse 1.2s infinite;display:none;}
+.padot.on{display:inline-block;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.pa-prog{flex:1;min-width:80px;height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;}
+.pa-fill{height:100%;background:linear-gradient(90deg,var(--sage),var(--amber));border-radius:2px;width:0%;transition:width .4s;}
+.tts-note{font-size:.71rem;color:var(--amber-l);background:rgba(232,168,56,.15);padding:3px 8px;border-radius:5px;flex-shrink:0;}
+
+/* PDF canvas area */
+.pdf-canvas-area{flex:1;overflow-y:auto;background:#3C3428;display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem;gap:1rem;}
+.pdf-page-wrap{background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.4);border-radius:3px;position:relative;}
+.pdf-page-num{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:.7rem;color:rgba(253,248,240,.4);white-space:nowrap;}
+.pdf-vfooter{height:52px;background:rgba(44,36,22,.95);display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;flex-shrink:0;border-top:1px solid rgba(255,255,255,.1);}
+.pdf-pinfo{color:rgba(253,248,240,.6);font-size:.78rem;text-align:center;}
+.pdf-nav-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#FDF8F0;border-radius:9px;padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.pdf-nav-btn:hover{background:rgba(255,255,255,.2);}
+.pdf-nav-btn:disabled{opacity:.3;cursor:not-allowed;}
+.pdf-prog-bar{flex:1;margin:0 1rem;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;cursor:pointer;}
+.pdf-prog-fill{height:100%;background:linear-gradient(90deg,var(--sage),var(--amber));border-radius:2px;transition:width .3s;}
+.zoom-ctrl{display:flex;align-items:center;gap:5px;}
+.zbtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#FDF8F0;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;font-weight:700;transition:all .2s;}
+.zbtn:hover{background:rgba(255,255,255,.22);}
+.zlbl{font-size:.74rem;color:rgba(253,248,240,.6);min-width:36px;text-align:center;}
+
+/* Loading spinner */
+.pdf-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:#FDF8F0;}
+.spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--sage-l);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:1rem;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pdf-load-msg{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:.3rem;}
+.pdf-load-sub{font-size:.8rem;opacity:.6;}
+.pdf-load-prog{width:240px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;margin-top:1rem;}
+.pdf-load-fill{height:100%;background:linear-gradient(90deg,var(--sage),var(--amber));border-radius:2px;transition:width .4s;}
+
+/* READER TAB */
+.rtab-layout{display:grid;grid-template-columns:1fr 290px;gap:1.25rem;}
+@media(max-width:780px){.rtab-layout{grid-template-columns:1fr}}
+.upload-zone{border:2px dashed var(--sage-l);border-radius:16px;padding:2.5rem 2rem;text-align:center;background:rgba(124,154,126,.04);cursor:pointer;transition:all .2s;margin-bottom:1.25rem;}
+.upload-zone:hover{border-color:var(--sage);background:rgba(124,154,126,.08);}
+
+/* Book info card */
+.bic{background:linear-gradient(135deg,rgba(124,154,126,.1),rgba(232,168,56,.07));border:1px solid var(--sage-l);border-radius:16px;padding:1.25rem;margin-bottom:1.25rem;display:none;}
+.bic-inner{display:flex;gap:14px;align-items:flex-start;}
+.bic-cover{width:56px;height:76px;border-radius:7px;background:linear-gradient(135deg,var(--sage),var(--amber));display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;box-shadow:0 4px 12px var(--shm);}
+.bic-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;margin-bottom:3px;}
+.bic-author{font-size:.82rem;color:var(--inkl);margin-bottom:8px;}
+.bic-stats{display:flex;gap:8px;flex-wrap:wrap;}
+.bic-stat{background:rgba(255,255,255,.6);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:.74rem;font-weight:600;color:var(--inkm);}
+.bic-acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+
+/* TTS warning note */
+.tts-info{background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.25);border-radius:10px;padding:10px 13px;font-size:.8rem;color:var(--amber-d);margin-bottom:1rem;line-height:1.55;}
+
+/* Text reader panel */
+.txt-reader{background:var(--warm);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;}
+.txt-reader-hdr{padding:10px 14px;background:linear-gradient(90deg,rgba(124,154,126,.08),transparent);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.txt-reader-body{padding:1.5rem;font-family:'Lora',Georgia,serif;font-size:.93rem;line-height:1.85;color:var(--inkm);white-space:pre-wrap;max-height:400px;overflow-y:auto;}
+.pnav{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.pind{font-size:.79rem;color:var(--inkl);}
+
+/* Simple audio player */
+.audio-pl{background:linear-gradient(135deg,rgba(124,154,126,.1),rgba(232,168,56,.07));border:1px solid var(--sage-l);border-radius:13px;padding:1rem;margin-bottom:1rem;}
+.ap-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+.ap-play{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--sage),var(--sage-d));border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.ap-play:hover{transform:scale(1.08);}
+.ap-vsel{flex:1;min-width:100px;font-size:.79rem;padding:6px 9px;}
+.ap-ssel{width:68px;font-size:.79rem;padding:6px 8px;}
+.ap-prog{margin-top:7px;height:4px;border-radius:2px;background:var(--border);overflow:hidden;}
+.ap-fill{height:100%;background:linear-gradient(90deg,var(--sage),var(--amber));border-radius:2px;width:0%;transition:width .4s;}
+.ap-stat{font-size:.75rem;color:var(--inkl);margin-top:5px;display:flex;align-items:center;gap:5px;}
+.adot{width:6px;height:6px;border-radius:50%;background:var(--sage);animation:pulse 1.2s infinite;display:none;}
+.adot.on{display:inline-block;}
+
+/* Sidebar */
+.def-res{background:linear-gradient(135deg,rgba(110,168,200,.08),rgba(196,134,154,.06));border:1px solid var(--sky-l);border-radius:10px;padding:10px;margin-top:8px;font-size:.84rem;color:var(--inkm);line-height:1.7;display:none;}
+.def-res.show{display:block;}
+.note-item{background:rgba(232,168,56,.08);border-left:3px solid var(--amber);border-radius:0 10px 10px 0;padding:9px 28px 9px 11px;margin-bottom:7px;font-size:.83rem;color:var(--inkm);position:relative;}
+.note-meta{font-size:.7rem;color:var(--inkl);margin-top:3px;}
+.ndel{position:absolute;top:7px;right:8px;background:none;border:none;color:var(--inkl);cursor:pointer;font-size:.77rem;}
+
+/* COURSE */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+@media(max-width:600px){.form-row{grid-template-columns:1fr}}
+.flabel{display:block;font-size:.81rem;font-weight:600;color:var(--inkm);margin-bottom:4px;}
+.scope-tabs{display:flex;gap:4px;background:var(--cream);border-radius:10px;padding:3px;margin-bottom:1rem;}
+.scope-tab{flex:1;padding:7px;text-align:center;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:.79rem;font-weight:500;color:var(--inkl);border-radius:7px;cursor:pointer;transition:all .2s;}
+.scope-tab.active{background:var(--warm);color:var(--sage-d);font-weight:600;box-shadow:0 1px 4px var(--sh);}
+.course-out{background:var(--warm);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.day-block{border-bottom:1px solid var(--border);}
+.day-block:last-child{border-bottom:none;}
+.day-hdr{padding:13px 17px;background:linear-gradient(90deg,rgba(124,154,126,.07),transparent);display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.day-hdr h3{font-family:'Playfair Display',serif;font-size:.93rem;font-weight:700;}
+.day-body{padding:13px 17px;font-size:.84rem;color:var(--inkm);line-height:1.75;display:none;}
+.day-body.open{display:block;}
+.dlabel{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.dsec{margin-bottom:8px;}
+
+/* CONTENT */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+@media(max-width:700px){.cgrid{grid-template-columns:1fr}}
+.pcard{border:1.5px solid var(--border);border-radius:13px;overflow:hidden;background:var(--warm);}
+.phdr{padding:10px 14px;display:flex;align-items:center;gap:7px;font-weight:600;font-size:.84rem;}
+.ph-yt{background:rgba(255,80,80,.08);color:#CC2020;}
+.ph-ig{background:rgba(196,86,154,.08);color:#8B1A6B;}
+.ph-li{background:rgba(0,120,210,.08);color:#005A9E;}
+.ph-tw{background:rgba(29,161,242,.08);color:#0D7ABF;}
+.pbody{padding:12px 14px;font-size:.83rem;color:var(--inkm);line-height:1.7;min-height:90px;white-space:pre-wrap;}
+.pfoot{padding:7px 12px;border-top:1px solid var(--border);display:flex;gap:7px;}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(44,36,22,.45);backdrop-filter:blur(4px);z-index:700;align-items:center;justify-content:center;}
+.modal-ov.open{display:flex;}
+.modal{background:var(--warm);border-radius:20px;padding:2rem;width:90%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mIn .25s ease;}
+@keyframes mIn{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.mtitle{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;margin-bottom:1.4rem;}
+.mfoot{display:flex;gap:10px;justify-content:flex-end;margin-top:1.4rem;}
+.krow{position:relative;margin-bottom:1rem;}
+.krow input{padding-right:42px;font-family:'DM Mono',monospace;font-size:.8rem;}
+.tkey{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--inkl);}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--ink);color:var(--cream);padding:11px 17px;border-radius:11px;font-size:.83rem;font-weight:500;z-index:800;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:300px;}
+.toast.show{transform:none;opacity:1;}
+
+/* MISC */
+.sec-h{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:800;margin-bottom:.3rem;}
+.sec-s{font-size:.86rem;color:var(--inkl);margin-bottom:1.4rem;}
+.frow{display:flex;gap:9px;align-items:flex-start;flex-wrap:wrap;}
+.f1{flex:1;min-width:0;}
+.empty-s{text-align:center;padding:2rem 1rem;color:var(--inkl);}
+.empty-s .ei{font-size:2.4rem;margin-bottom:.7rem;}
+.empty-s h3{font-family:'Playfair Display',serif;font-size:.98rem;color:var(--inkm);margin-bottom:.3rem;}
+.sum-sec{border-left:3px solid var(--sage-l);padding:9px 13px;margin-bottom:9px;background:rgba(124,154,126,.04);border-radius:0 9px 9px 0;}
+.sum-sec h4{font-size:.83rem;font-weight:600;color:var(--sage-d);margin-bottom:3px;}
+.sum-sec p{font-size:.84rem;color:var(--inkm);line-height:1.65;}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-ov" id="setModal">
+  <div class="modal">
+    <div class="mtitle">⚙️ API Settings</div>
+    <div style="margin-bottom:1rem;">
+      <label class="flabel">🔑 Anthropic API Key (required)</label>
+      <div class="krow"><input type="password" id="antKey" placeholder="sk-ant-..." autocomplete="off"><button class="tkey" onclick="tk('antKey')">👁</button></div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="flabel">🔑 OpenAI API Key <span style="font-weight:400;color:var(--inkl)">(optional — premium voice)</span></label>
+      <div style="background:rgba(232,168,56,.08);border:1px solid rgba(232,168,56,.2);border-radius:8px;padding:8px 11px;font-size:.76rem;color:var(--amber-d);margin-bottom:7px;line-height:1.5;">
+        ⚠️ <strong>Note:</strong> OpenAI TTS only works when running this file locally on your computer (not in Claude's preview). Download the file and open it in Chrome/Safari for premium voice.
+      </div>
+      <div class="krow"><input type="password" id="oaiKey" placeholder="sk-..." autocomplete="off"><button class="tkey" onclick="tk('oaiKey')">👁</button></div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="flabel">🔊 Preferred Voice (OpenAI)</label>
+      <select id="prefV"><option value="nova">Nova — Warm & Natural (Best)</option><option value="shimmer">Shimmer — Soft & Calm</option><option value="alloy">Alloy — Clear & Balanced</option><option value="echo">Echo — Deep & Rich</option><option value="fable">Fable — Expressive</option><option value="onyx">Onyx — Strong</option></select>
+    </div>
+    <div class="smsg" id="setMsg"></div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeSet()">Cancel</button>
+      <button class="btn btn-p" onclick="saveSet()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF VISUAL VIEWER -->
+<div class="pdf-viewer-wrap" id="pdfViewer">
+  <div class="pdf-vhdr">
+    <div>
+      <div class="pdf-vtitle" id="pvTitle">—</div>
+      <div class="pdf-vmeta" id="pvMeta">—</div>
+    </div>
+    <div class="pdf-vhdr-r">
+      <div class="zoom-ctrl">
+        <button class="zbtn" onclick="zoom(-0.25)">−</button>
+        <span class="zlbl" id="zoomLbl">100%</span>
+        <button class="zbtn" onclick="zoom(0.25)">+</button>
+      </div>
+      <button class="pvbtn" onclick="togglePdfSingleMode()" id="pvModeBtn">Single Page</button>
+      <button class="pvbtn act" id="pvListenBtn" onclick="togglePdfAudio()">🔊 Listen</button>
+      <button class="pvbtn" onclick="closePdfViewer()">✕ Close</button>
+    </div>
+  </div>
+  <!-- Audio bar inside viewer -->
+  <div class="pdf-audio-bar" id="pdfAudioBar">
+    <button class="pa-play" id="paPlay" onclick="paToggle()">▶</button>
+    <select class="pa-vsel" id="paVsel"><option value="nova">Nova — Warm</option><option value="shimmer">Shimmer</option><option value="alloy">Alloy</option><option value="echo">Echo</option><option value="fable">Fable</option><option value="onyx">Onyx</option></select>
+    <select class="pa-ssel" id="paSpd"><option value=".8">0.8×</option><option value="1" selected>1.0×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select>
+    <span class="padot" id="padot"></span>
+    <span class="pa-lbl" id="paLbl">Browser voice active</span>
+    <div class="pa-prog"><div class="pa-fill" id="paFill"></div></div>
+    <span class="tts-note" id="ttsModeNote">Browser Voice</span>
+    <button class="pvbtn" onclick="paStop()">⏹</button>
+  </div>
+  <!-- Canvas render area -->
+  <div class="pdf-canvas-area" id="pdfCanvasArea">
+    <div class="pdf-loading" id="pdfLoadingSpinner">
+      <div class="spinner"></div>
+      <div class="pdf-load-msg">Rendering your PDF…</div>
+      <div class="pdf-load-sub">Loading pages with images and diagrams</div>
+      <div class="pdf-load-prog"><div class="pdf-load-fill" id="pdfLoadFill" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="pdf-vfooter">
+    <button class="pdf-nav-btn" id="pvPrev" onclick="pvPg(-1)">← Prev</button>
+    <div style="flex:1;display:flex;align-items:center;gap:8px;justify-content:center;">
+      <div class="pdf-prog-bar" onclick="pvJump(event)"><div class="pdf-prog-fill" id="pvProgFill"></div></div>
+      <div class="pdf-pinfo" id="pvPageInfo">Page 1 of 1</div>
+    </div>
+    <button class="pdf-nav-btn" id="pvNext" onclick="pvPg(1)">Next →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">📚</div>
+    <div class="logo-text">Book<span>Forge</span></div>
+  </div>
+  <div class="hdr-r">
+    <div class="book-pill" id="bookPill">📖 <span id="pillTxt"></span></div>
+    <button class="btn-set" onclick="openSet()">⚙️ API Keys</button>
+  </div>
+</header>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="sw('search')" id="tab-search">🔍 Find Books</button>
+  <button class="nav-tab" onclick="sw('reader')" id="tab-reader">📖 Read & Listen</button>
+  <button class="nav-tab" onclick="sw('summary')" id="tab-summary">✨ Summarize</button>
+  <button class="nav-tab" onclick="sw('course')" id="tab-course">🎓 Build Course</button>
+  <button class="nav-tab" onclick="sw('content')" id="tab-content">📱 Social Content</button>
+  <button class="nav-tab" onclick="sw('notes')" id="tab-notes">📝 My Notes</button>
+</div>
+
+<div class="main">
+
+<!-- ── FIND BOOKS ── -->
+<div class="tab-panel active" id="panel-search">
+  <div class="sh-hero">
+    <h1>Find Any Book,<br><em>Free or Cheapest</em></h1>
+    <p>AI finds free legal versions first — then cheapest paid options with direct purchase links.</p>
+    <div class="sbox">
+      <input type="text" id="srchI" placeholder="Title, author, or topic…" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="btn btn-p" onclick="doSearch()">🔍 Search</button>
+    </div>
+    <div class="chips" style="justify-content:center;margin-top:1rem;">
+      <span class="chip" onclick="qs('Yoga Philosophy')">Yoga Philosophy</span>
+      <span class="chip" onclick="qs('Bhagavad Gita')">Bhagavad Gita</span>
+      <span class="chip" onclick="qs('Art of War')">Art of War</span>
+      <span class="chip" onclick="qs('Dare to Lead Brene Brown')">Dare to Lead</span>
+      <span class="chip" onclick="qs('Meditation Mindfulness')">Meditation</span>
+      <span class="chip" onclick="qs('Stoicism Marcus Aurelius')">Stoicism</span>
+    </div>
+  </div>
+  <div class="loading-bar" id="sl"></div>
+  <div class="smsg" id="ss"></div>
+  <div id="srchOut"></div>
+</div>
+
+<!-- ── READ & LISTEN ── -->
+<div class="tab-panel" id="panel-reader">
+  <div class="sec-h">📖 Read & Listen</div>
+  <div class="sec-s">Upload your PDF — see every page exactly as it is, including images and diagrams</div>
+
+  <!-- TTS info note -->
+  <div class="tts-info" id="ttsInfoNote">
+    🔊 <strong>About Voice Reading:</strong> Premium OpenAI voice works when you run this file locally on your computer (download → open in Chrome). In this preview, free browser voice is used automatically — it still reads aloud, just without the premium voice quality.
+  </div>
+
+  <!-- Book info -->
+  <div class="bic" id="bicCard">
+    <div class="bic-inner">
+      <div class="bic-cover" id="bicCover">📚</div>
+      <div style="flex:1;">
+        <div class="bic-title" id="bicTitle">—</div>
+        <div class="bic-author" id="bicAuthor">—</div>
+        <div class="bic-stats">
+          <span class="bic-stat" id="bicPages">— pages</span>
+          <span class="bic-stat" id="bicWords">— words</span>
+          <span class="bic-stat" id="bicType">—</span>
+        </div>
+        <div class="bic-acts">
+          <button class="btn btn-p btn-sm" onclick="openPdfViewer()">📄 Open Visual Reader</button>
+          <button class="btn btn-g btn-sm" onclick="apTogglePlay()">🔊 Listen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rtab-layout">
+    <div>
+      <div class="upload-zone" onclick="document.getElementById('fup').click()">
+        <input type="file" id="fup" accept=".pdf,.txt" style="display:none" onchange="handleUpload(event)">
+        <div style="font-size:2.2rem;margin-bottom:.6rem;">📄</div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:1rem;margin-bottom:.3rem;">Upload PDF or Text File</h3>
+        <p style="font-size:.81rem;color:var(--inkl);">Your entire PDF renders visually — images, diagrams, all pages</p>
+      </div>
+      <div class="frow" style="margin-bottom:1.25rem;">
+        <input type="text" id="urlI" placeholder="Or paste a URL / article link…" class="f1">
+        <button class="btn btn-g" onclick="loadUrl()">Load URL</button>
+      </div>
+      <div class="smsg" id="pdfStat"></div>
+
+      <!-- Audio player -->
+      <div class="audio-pl" id="apPanel" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:600;font-size:.85rem;color:var(--sage-d);">🔊 Voice Reader</span>
+          <span id="ttsBadge" style="font-size:.7rem;padding:2px 7px;border-radius:5px;font-weight:600;background:rgba(124,154,126,.12);color:var(--sage-d);">Browser Voice</span>
+        </div>
+        <div class="ap-row">
+          <button class="ap-play" id="apPlay" onclick="apTogglePlay()">▶</button>
+          <select class="ap-vsel" id="apVsel"><option value="nova">Nova — Warm</option><option value="shimmer">Shimmer</option><option value="alloy">Alloy</option><option value="echo">Echo</option><option value="fable">Fable</option><option value="onyx">Onyx</option></select>
+          <select class="ap-ssel" id="apSpd"><option value=".8">0.8×</option><option value="1" selected>1.0×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select>
+          <button class="btn btn-g btn-sm" onclick="apStop()">⏹</button>
+        </div>
+        <div class="ap-prog"><div class="ap-fill" id="apFill"></div></div>
+        <div class="ap-stat"><span class="adot" id="apDot"></span><span id="apTxt">Ready</span></div>
+      </div>
+
+      <!-- Text display -->
+      <div class="txt-reader">
+        <div class="txt-reader-hdr">
+          <span style="font-size:.82rem;font-weight:600;color:var(--inkm);">📝 Extracted Text (for AI features)</span>
+          <button class="btn btn-p btn-sm" onclick="openPdfViewer()" id="openVizBtn" style="display:none;">📄 Open Visual Reader</button>
+        </div>
+        <div class="txt-reader-body" id="cDisp" onmouseup="onSel()">
+          <div class="empty-s"><div class="ei">📖</div><h3>No content loaded</h3><p>Upload a PDF to see extracted text and open the visual reader</p></div>
+        </div>
+      </div>
+      <div class="pnav">
+        <button class="btn btn-g btn-sm" onclick="pgPrev()">← Prev</button>
+        <span class="pind" id="pgInd">—</span>
+        <button class="btn btn-g btn-sm" onclick="pgNext()">Next →</button>
+        <input type="number" id="pgI" placeholder="#" style="width:70px;font-size:.82rem;padding:6px 9px;">
+        <button class="btn btn-g btn-sm" onclick="pgGo()">Go</button>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">📚 Word Definition</div>
+        <div class="frow">
+          <input type="text" id="wInp" placeholder="Select or type a word…" class="f1" style="font-size:.84rem;">
+          <button class="btn btn-sky btn-sm" onclick="defineWord()">Define</button>
+        </div>
+        <p style="font-size:.73rem;color:var(--inkl);margin-top:4px;">💡 Select any word in the text above</p>
+        <div class="def-res" id="defRes"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📝 Quick Note</div>
+        <textarea id="qNote" placeholder="Write your insight or highlight…" style="min-height:95px;"></textarea>
+        <button class="btn btn-a btn-sm" style="margin-top:7px;width:100%;" onclick="saveQNote()">💾 Save Note</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUMMARIZE ── -->
+<div class="tab-panel" id="panel-summary">
+  <div class="sec-h">✨ Summarize</div>
+  <div class="sec-s">AI summaries — full book, chapter by chapter, key insights, or action items</div>
+  <div class="loading-bar" id="suml"></div>
+  <div class="smsg" id="sums"></div>
+  <div class="card">
+    <div class="card-title">What would you like?</div>
+    <div class="chips" id="sumChips">
+      <span class="chip active" data-m="full">📘 Full Overview</span>
+      <span class="chip" data-m="chapter">📑 Chapter by Chapter</span>
+      <span class="chip" data-m="insights">💡 Key Insights</span>
+      <span class="chip" data-m="quotes">💬 Best Quotes</span>
+      <span class="chip" data-m="action">✅ Action Items</span>
+    </div>
+    <div style="margin-top:1rem;">
+      <textarea id="sumCtx" placeholder="Optional: extra focus or paste content…" style="min-height:60px;"></textarea>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:9px;flex-wrap:wrap;">
+      <button class="btn btn-p" onclick="genSum()">✨ Generate</button>
+      <button class="btn btn-g" onclick="listenSum()">🔊 Listen</button>
+      <button class="btn btn-g" onclick="copySum()">📋 Copy</button>
+    </div>
+  </div>
+  <div id="sumOut"></div>
+</div>
+
+<!-- ── BUILD COURSE ── -->
+<div class="tab-panel" id="panel-course">
+  <div class="sec-h">🎓 Build a Course</div>
+  <div class="sec-s">One class to 21 days — entire book, specific chapter, or any topic</div>
+  <div class="loading-bar" id="coul"></div>
+  <div class="smsg" id="cous"></div>
+  <div class="card">
+    <label class="flabel" style="margin-bottom:6px;">Course Scope</label>
+    <div class="scope-tabs">
+      <button class="scope-tab active" onclick="setScope('book',this)">📚 Entire Book</button>
+      <button class="scope-tab" onclick="setScope('chapter',this)">📑 By Chapter</button>
+      <button class="scope-tab" onclick="setScope('topic',this)">🎯 By Topic</button>
+    </div>
+    <div id="scopeExtra" style="display:none;margin-bottom:1rem;">
+      <label class="flabel" id="scopeLabel">Specify</label>
+      <input type="text" id="scopeVal" placeholder="">
+    </div>
+    <div class="form-row">
+      <div><label class="flabel">Course Type</label>
+        <select id="cType"><option>Yoga Philosophy</option><option>Meditation & Mindfulness</option><option>Tantra Philosophy</option><option>Corporate Wellness</option><option>Leadership & Management</option><option>Motivation & Personal Growth</option><option>Mentorship & Coaching</option><option>Health & Wellness</option><option>Spirituality</option><option>Custom</option></select>
+      </div>
+      <div><label class="flabel">Duration</label>
+        <select id="cDur"><option value="1class">1 Class (Single Session)</option><option value="3">3-Day Intensive</option><option value="5">5-Day Workshop</option><option value="7" selected>7-Day Program</option><option value="14">14-Day Deep Dive</option><option value="21">21-Day Journey</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label class="flabel">Audience</label>
+        <select id="cAud"><option>Beginners</option><option>Intermediate</option><option>Advanced</option><option>Corporate Professionals</option><option>Yoga Students</option><option>General Public</option></select>
+      </div>
+      <div><label class="flabel">Session Length</label>
+        <select id="cSess"><option>60 minutes</option><option>90 minutes</option><option>2 hours</option><option>Half day</option><option>Full day</option></select>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="flabel">Additional Instructions (optional)</label>
+      <textarea id="cExtra" placeholder="e.g. Include morning practices, discussion questions, exercises…" style="min-height:60px;"></textarea>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;">
+      <button class="btn btn-p" onclick="buildCourse()">🎓 Build Course</button>
+      <button class="btn btn-g" onclick="listenCourse()">🔊 Read Aloud</button>
+      <button class="btn btn-a" onclick="dlCourse()">⬇️ Download</button>
+    </div>
+  </div>
+  <div id="couOut"></div>
+</div>
+
+<!-- ── SOCIAL CONTENT ── -->
+<div class="tab-panel" id="panel-content">
+  <div class="sec-h">📱 Social Media Content</div>
+  <div class="sec-s">Generate for one platform or all — YouTube, Instagram, LinkedIn, Twitter</div>
+  <div class="loading-bar" id="contl"></div>
+  <div class="smsg" id="conts"></div>
+  <div class="card">
+    <div class="form-row">
+      <div><label class="flabel">Content Focus</label>
+        <select id="cFocus"><option>Key Insight or Lesson</option><option>Inspiring Quote + Commentary</option><option>How-To / Practical Tip</option><option>Story / Narrative</option><option>Thought-Provoking Idea</option><option>Book Review</option></select>
+      </div>
+      <div><label class="flabel">Your Niche</label>
+        <select id="cNiche"><option>Yoga & Wellness</option><option>Corporate Leadership</option><option>Spirituality & Philosophy</option><option>Motivation & Mindset</option><option>Health & Fitness</option><option>Education & Learning</option></select>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label class="flabel">Specific passage or topic (optional)</label>
+      <textarea id="cPass" placeholder="Paste a quote, passage, or describe a topic…" style="min-height:60px;"></textarea>
+    </div>
+    <!-- Platform selector -->
+    <label class="flabel" style="margin-bottom:8px;">Choose platforms to generate</label>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1rem;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--cream);border:1.5px solid var(--border);border-radius:9px;padding:7px 13px;font-size:.83rem;font-weight:500;color:var(--inkm);transition:all .2s;" id="lbl-yt">
+        <input type="checkbox" id="chk-yt" checked onchange="updPlat('yt')" style="width:auto;accent-color:var(--terra);"> ▶ YouTube
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--cream);border:1.5px solid var(--border);border-radius:9px;padding:7px 13px;font-size:.83rem;font-weight:500;color:var(--inkm);transition:all .2s;" id="lbl-ig">
+        <input type="checkbox" id="chk-ig" checked onchange="updPlat('ig')" style="width:auto;accent-color:#8B1A6B;"> 📸 Instagram
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--cream);border:1.5px solid var(--border);border-radius:9px;padding:7px 13px;font-size:.83rem;font-weight:500;color:var(--inkm);transition:all .2s;" id="lbl-li">
+        <input type="checkbox" id="chk-li" checked onchange="updPlat('li')" style="width:auto;accent-color:#005A9E;"> 💼 LinkedIn
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--cream);border:1.5px solid var(--border);border-radius:9px;padding:7px 13px;font-size:.83rem;font-weight:500;color:var(--inkm);transition:all .2s;" id="lbl-tw">
+        <input type="checkbox" id="chk-tw" checked onchange="updPlat('tw')" style="width:auto;accent-color:#0D7ABF;"> 🐦 Twitter / X
+      </label>
+      <button class="btn btn-g btn-sm" onclick="selAllPlat(true)" style="align-self:center;">Select All</button>
+      <button class="btn btn-g btn-sm" onclick="selAllPlat(false)" style="align-self:center;">Clear</button>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-p" onclick="genContent()" id="genContBtn">🚀 Generate Selected</button>
+      <span style="font-size:.78rem;color:var(--inkl);" id="genContHint">4 platforms selected</span>
+    </div>
+  </div>
+  <div id="cSugW" style="display:none;" class="card">
+    <div class="card-title">💡 Best Parts for Content</div>
+    <div id="cSug" style="font-size:.86rem;color:var(--inkm);line-height:1.7;"></div>
+  </div>
+  <div class="cgrid">
+    <div class="pcard" id="card-yt">
+      <div class="phdr ph-yt" style="justify-content:space-between;">
+        <span>▶ YouTube Script</span>
+        <div style="display:flex;gap:5px;">
+          <button class="btn btn-g btn-sm" onclick="genOne('yt')" id="gen-yt" style="font-size:.72rem;padding:4px 9px;">↺ Regenerate</button>
+        </div>
+      </div>
+      <div class="pbody" id="ytC"><div class="empty-s" style="padding:1.5rem 0;"><div class="ei" style="font-size:1.8rem;">▶</div><p>Generate content first</p></div></div>
+      <div class="pfoot">
+        <button class="btn btn-g btn-sm" onclick="cpEl('ytC')">📋 Copy</button>
+        <button class="btn btn-g btn-sm" id="lis-yt" onclick="listenToggle('ytC','lis-yt')">🔊 Listen</button>
+      </div>
+    </div>
+    <div class="pcard" id="card-ig">
+      <div class="phdr ph-ig" style="justify-content:space-between;">
+        <span>📸 Instagram Caption</span>
+        <div style="display:flex;gap:5px;">
+          <button class="btn btn-g btn-sm" onclick="genOne('ig')" id="gen-ig" style="font-size:.72rem;padding:4px 9px;">↺ Regenerate</button>
+        </div>
+      </div>
+      <div class="pbody" id="igC"><div class="empty-s" style="padding:1.5rem 0;"><div class="ei" style="font-size:1.8rem;">📸</div><p>Generate content first</p></div></div>
+      <div class="pfoot">
+        <button class="btn btn-g btn-sm" onclick="cpEl('igC')">📋 Copy</button>
+        <button class="btn btn-g btn-sm" id="lis-ig" onclick="listenToggle('igC','lis-ig')">🔊 Listen</button>
+      </div>
+    </div>
+    <div class="pcard" id="card-li">
+      <div class="phdr ph-li" style="justify-content:space-between;">
+        <span>💼 LinkedIn Post</span>
+        <div style="display:flex;gap:5px;">
+          <button class="btn btn-g btn-sm" onclick="genOne('li')" id="gen-li" style="font-size:.72rem;padding:4px 9px;">↺ Regenerate</button>
+        </div>
+      </div>
+      <div class="pbody" id="liC"><div class="empty-s" style="padding:1.5rem 0;"><div class="ei" style="font-size:1.8rem;">💼</div><p>Generate content first</p></div></div>
+      <div class="pfoot">
+        <button class="btn btn-g btn-sm" onclick="cpEl('liC')">📋 Copy</button>
+        <button class="btn btn-g btn-sm" id="lis-li" onclick="listenToggle('liC','lis-li')">🔊 Listen</button>
+      </div>
+    </div>
+    <div class="pcard" id="card-tw">
+      <div class="phdr ph-tw" style="justify-content:space-between;">
+        <span>🐦 Twitter / X Thread</span>
+        <div style="display:flex;gap:5px;">
+          <button class="btn btn-g btn-sm" onclick="genOne('tw')" id="gen-tw" style="font-size:.72rem;padding:4px 9px;">↺ Regenerate</button>
+        </div>
+      </div>
+      <div class="pbody" id="twC"><div class="empty-s" style="padding:1.5rem 0;"><div class="ei" style="font-size:1.8rem;">🐦</div><p>Generate content first</p></div></div>
+      <div class="pfoot">
+        <button class="btn btn-g btn-sm" onclick="cpEl('twC')">📋 Copy</button>
+        <button class="btn btn-g btn-sm" id="lis-tw" onclick="listenToggle('twC','lis-tw')">🔊 Listen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── NOTES ── -->
+<div class="tab-panel" id="panel-notes">
+  <div class="sec-h">📝 My Notes</div>
+  <div class="sec-s">All saved notes and highlights from your reading sessions</div>
+  <div class="card">
+    <div class="card-title">Add a Note</div>
+    <textarea id="nNote" placeholder="Write a note, insight, or paste a quote…" style="min-height:75px;"></textarea>
+    <div style="display:flex;gap:9px;margin-top:9px;flex-wrap:wrap;">
+      <button class="btn btn-p" onclick="addNote()">💾 Save</button>
+      <button class="btn btn-g" onclick="expNotes()">⬇️ Export</button>
+      <button class="btn btn-g" onclick="clearNotes()" style="color:var(--terra);">🗑 Clear All</button>
+    </div>
+  </div>
+  <div id="notesList"></div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ── Load PDF.js dynamically so worker config runs BEFORE any PDF operation ──
+const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let pdfLibReady = false;
+
+function loadPDFJS() {
+  return new Promise((resolve, reject) => {
+    if (pdfLibReady) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = PDFJS_URL;
+    s.onload = () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      pdfLibReady = true;
+      resolve();
+    };
+    s.onerror = () => reject(new Error('Failed to load PDF.js'));
+    document.head.appendChild(s);
+  });
+}
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const S={
+  ant:localStorage.getItem('bf_ant')||'',
+  oai:localStorage.getItem('bf_oai')||'',
+  voice:localStorage.getItem('bf_voice')||'nova',
+  book:null,
+  pages:[],page:0,fullText:'',
+  pdfDoc:null,pdfPages:0,pdfCurrentPage:1,pdfZoom:1.2,pdfSingleMode:false,
+  pdfB64:null,
+  notes:JSON.parse(localStorage.getItem('bf_notes')||'[]'),
+  sumMode:'full',lastSum:'',
+  lastCourseJSON:null,lastCourseTxt:'',courseScope:'book',
+  playing:false,curAudio:null
+};
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.onload=()=>{
+  if(!S.ant) setTimeout(openSet,600);
+  renderNotes(); updBadge();
+  document.querySelectorAll('#sumChips .chip').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('#sumChips .chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active'); S.sumMode=c.dataset.m;
+    });
+  });
+};
+
+function updBadge(){
+  const b=document.getElementById('ttsBadge');
+  const noteEl=document.getElementById('ttsModeNote');
+  if(S.oai){
+    b.textContent='✨ OpenAI Premium (local only)';
+    b.style.cssText='font-size:.7rem;padding:2px 7px;border-radius:5px;font-weight:600;background:rgba(232,168,56,.15);color:var(--amber-d);';
+    if(noteEl) noteEl.textContent='OpenAI Voice';
+  } else {
+    b.textContent='Browser Voice (Free)';
+    b.style.cssText='font-size:.7rem;padding:2px 7px;border-radius:5px;font-weight:600;background:rgba(124,154,126,.12);color:var(--sage-d);';
+    if(noteEl) noteEl.textContent='Browser Voice';
+  }
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function sw(n){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+n).classList.add('active');
+  document.getElementById('tab-'+n).classList.add('active');
+  if(n==='notes') renderNotes();
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function openSet(){document.getElementById('antKey').value=S.ant;document.getElementById('oaiKey').value=S.oai;document.getElementById('prefV').value=S.voice;document.getElementById('setModal').classList.add('open');}
+function closeSet(){document.getElementById('setModal').classList.remove('open');}
+function tk(id){const i=document.getElementById(id);i.type=i.type==='password'?'text':'password';}
+function saveSet(){
+  const a=document.getElementById('antKey').value.trim(),o=document.getElementById('oaiKey').value.trim(),v=document.getElementById('prefV').value;
+  if(!a){smsg('setMsg','⚠️ Anthropic key required','s-err');return;}
+  S.ant=a;S.oai=o;S.voice=v;
+  localStorage.setItem('bf_ant',a);localStorage.setItem('bf_oai',o);localStorage.setItem('bf_voice',v);
+  updBadge(); smsg('setMsg','✅ Saved!','s-ok'); setTimeout(closeSet,900);
+}
+document.getElementById('setModal').addEventListener('click',e=>{if(e.target.id==='setModal')closeSet();});
+
+// ═══════════════════════════════════════════
+// CLAUDE API
+// ═══════════════════════════════════════════
+async function claude(sys,usr,tok=1800){
+  if(!S.ant){openSet();throw new Error('No API key');}
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:tok,system:sys,messages:[{role:'user',content:usr}]})});
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'API '+r.status);}
+  return (await r.json()).content[0].text;
+}
+async function claudePDF(b64,prompt,tok=4000){
+  if(!S.ant){openSet();throw new Error('No API key');}
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:tok,
+      messages:[{role:'user',content:[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]}]})});
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'PDF '+r.status);}
+  return (await r.json()).content[0].text;
+}
+
+// ═══════════════════════════════════════════
+// BOOK SEARCH
+// ═══════════════════════════════════════════
+async function doSearch(){
+  const q=document.getElementById('srchI').value.trim();
+  if(!q){toast('Enter a book title or topic');return;}
+  if(!S.ant){openSet();return;}
+  ld('sl',1); smsg('ss','',''); document.getElementById('srchOut').innerHTML='';
+  try{
+    const raw=await claude(
+      'You are a book librarian. Respond ONLY with valid compact JSON, no markdown.',
+      `Find books about: "${q}"\nReturn ONLY this JSON:\n{"tip":"1 sentence recommendation","books":[{"title":"","author":"","year":"","desc":"1 sentence","isFree":true,"freeUrl":"real URL or empty","freeNote":"source if free"}],"cheapest":[{"label":"","url":"","price":""}]}\n6 books. isFree=true only for public domain. cheapest = 5 real options (Open Library, Gutenberg if classic, ThriftBooks, AbeBooks, Amazon).`,
+      1000
+    );
+    const c=raw.replace(/```json|```/g,'').trim();
+    const si=c.indexOf('{'),ei=c.lastIndexOf('}');
+    renderSearch(JSON.parse(c.substring(si,ei+1)));
+  }catch(e){smsg('ss','❌ '+e.message,'s-err');}
+  ld('sl',0);
+}
+function qs(q){document.getElementById('srchI').value=q;doSearch();}
+
+function renderSearch(d){
+  const bgs=['linear-gradient(135deg,#A8C5AA,#7C9A7E)','linear-gradient(135deg,#F5C96A,#E8A838)','linear-gradient(135deg,#E8967A,#D4704A)','linear-gradient(135deg,#A8CDE0,#6EA8C8)','linear-gradient(135deg,#C4869A,#A06070)','linear-gradient(135deg,#B8D4A8,#7C9A7E)'];
+  let h='';
+  if(d.tip) h+=`<div class="card" style="margin-bottom:1rem;"><div style="display:flex;gap:10px;"><span style="font-size:1.3rem;">🤖</span><div><div style="font-weight:600;font-size:.86rem;margin-bottom:2px;">AI Pick</div><div style="font-size:.85rem;color:var(--inkm);line-height:1.6;">${esc(d.tip)}</div></div></div></div>`;
+  h+=`<div class="books-grid">`;
+  (d.books||[]).forEach((b,i)=>{
+    const action=b.isFree&&b.freeUrl
+      ?`onclick="openFreeBook('${esc(b.title)}','${esc(b.author)}','${esc(b.freeUrl)}')"` 
+      :`onclick="openPaidBook('${esc(b.title)}','${esc(b.author)}')"`;
+    h+=`<div class="bcard" ${action}>
+      <div class="bcov" style="background:${bgs[i%bgs.length]};">📚${b.isFree?'<span class="free-tag">FREE</span>':''}
+      </div>
+      <div class="binfo">
+        <div class="btit">${esc(b.title)}</div>
+        <div class="baut">${esc(b.author)}${b.year?' · '+b.year:''}</div>
+        <span class="bbadge ${b.isFree?'bb-free':'bb-paid'}">${b.isFree?'✅ Free':'💰 Paid'}</span>
+        <div style="font-size:.69rem;color:${b.isFree?'var(--sage-d)':'var(--amber-d)'};margin-top:2px;">${b.isFree?'📍 '+esc(b.freeNote||'')+'  — Click to Read':'🛒 Click to Buy / Rent'}</div>
+      </div></div>`;
+  });
+  h+=`</div>`;
+  if(d.cheapest&&d.cheapest.length){
+    h+=`<div class="card" style="margin-top:1rem;"><div class="card-title">💰 Get This Book — Free & Cheapest</div><div class="cheap-opts">`;
+    d.cheapest.forEach(o=>{h+=`<a class="cheap-opt" href="${esc(o.url)}" target="_blank" rel="noopener">📌 ${esc(o.label)} <strong style="color:var(--sage-d);">${esc(o.price)}</strong></a>`;});
+    h+=`</div></div>`;
+  }
+  document.getElementById('srchOut').innerHTML=h;
+}
+
+function openFreeBook(title,author,url){
+  S.book={title,author};
+  const text=`Book: ${title}\nAuthor: ${author}\n\n[Free book selected. Opening source in new tab.]\n\nTo use all AI features:\n1. Download the PDF from the opened page\n2. Come back and upload it in Read & Listen tab\n\nThe AI features (summarize, course builder, social content) are ready to use based on AI knowledge of this book.`;
+  ingest(text,title,author,1,text.split(' ').length,'Search Result');
+  window.open(url,'_blank');
+  sw('reader');
+  toast(`📚 "${title}" selected — download PDF to upload`);
+}
+
+function openPaidBook(title,author){
+  const opts=[
+    {label:'Amazon',url:`https://www.amazon.com/s?k=${encodeURIComponent(title+' '+author)}`,price:'Check price'},
+    {label:'ThriftBooks',url:`https://www.thriftbooks.com/browse/?b.search=${encodeURIComponent(title)}`,price:'From $4'},
+    {label:'AbeBooks',url:`https://www.abebooks.com/servlet/SearchResults?kn=${encodeURIComponent(title)}`,price:'From $3'},
+    {label:'Open Library',url:`https://openlibrary.org/search?q=${encodeURIComponent(title)}`,price:'Free borrow'},
+    {label:'Google Books',url:`https://books.google.com/books?q=${encodeURIComponent(title)}`,price:'Preview free'},
+  ];
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(44,36,22,.5);z-index:800;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML=`<div style="background:var(--warm);border-radius:20px;padding:2rem;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <div style="font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;margin-bottom:.4rem;">🛒 Get "${esc(title)}"</div>
+    <div style="font-size:.8rem;color:var(--inkl);margin-bottom:1.1rem;">by ${esc(author)} — Choose where to buy or borrow</div>
+    <div style="display:flex;flex-direction:column;gap:7px;">
+      ${opts.map(o=>`<a href="${esc(o.url)}" target="_blank" rel="noopener" style="display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border:1.5px solid var(--border);border-radius:9px;text-decoration:none;color:var(--inkm);font-size:.84rem;font-weight:500;transition:all .2s;" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span>📌 ${esc(o.label)}</span><strong style="color:var(--sage-d);">${esc(o.price)}</strong></a>`).join('')}
+    </div>
+    <div style="margin-top:1.1rem;display:flex;justify-content:space-between;align-items:center;">
+      <button onclick="this.closest('div[style]').remove()" style="border:none;background:none;color:var(--inkl);cursor:pointer;font-size:.82rem;">✕ Close</button>
+      <div style="font-size:.74rem;color:var(--inkl);">After buying, upload PDF here for full features</div>
+    </div>
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+// ═══════════════════════════════════════════
+// FILE UPLOAD + PDF.js VISUAL RENDERING
+// ═══════════════════════════════════════════
+async function handleUpload(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  const title=f.name.replace(/\.[^.]+$/,'').replace(/_/g,' ');
+
+  if(f.type==='text/plain'){
+    const t=await f.text(); ingest(t,title,'Text File',Math.ceil(t.length/2500),t.split(' ').filter(Boolean).length,'Text');
+    return;
+  }
+
+  if(f.type==='application/pdf'){
+    if(!S.ant){openSet();return;}
+    smsg('pdfStat','⏳ Loading PDF viewer…','s-inf');
+    toast('📄 Loading PDF…');
+
+    try{
+      // Dynamically load PDF.js with worker configured BEFORE any use (prevents fake worker warning)
+      await loadPDFJS();
+      smsg('pdfStat','⏳ Reading PDF pages…','s-inf');
+
+      const arrayBuf=await f.arrayBuffer();
+      const uint8=new Uint8Array(arrayBuf);
+
+      // Store base64 for Claude AI features
+      S.pdfB64=btoa(uint8.reduce((d,b)=>d+String.fromCharCode(b),''));
+
+      // Load with PDF.js for visual rendering
+      const loadTask=pdfjsLib.getDocument({data:uint8});
+      loadTask.onProgress=(p)=>{
+        if(p.total) smsg('pdfStat',`⏳ Loading PDF… ${Math.round(p.loaded/p.total*100)}%`,'s-inf');
+      };
+      S.pdfDoc=await loadTask.promise;
+      S.pdfPages=S.pdfDoc.numPages;
+      S.pdfCurrentPage=1;
+
+      smsg('pdfStat',`📄 Extracting text for AI features…`,'s-inf');
+
+      // Extract text from all pages for AI
+      let allText='';
+      for(let i=1;i<=Math.min(S.pdfPages,50);i++){
+        const pg=await S.pdfDoc.getPage(i);
+        const tc=await pg.getTextContent();
+        const pgText=tc.items.map(x=>x.str).join(' ');
+        allText+=`\n--- Page ${i} ---\n${pgText}`;
+        if(i%10===0) smsg('pdfStat',`⏳ Extracting text page ${i}/${Math.min(S.pdfPages,50)}…`,'s-inf');
+      }
+      if(S.pdfPages>50){
+        allText+=`\n\n[Note: ${S.pdfPages} total pages. First 50 pages extracted for AI features.]`;
+      }
+
+      const wordCount=allText.split(/\s+/).filter(Boolean).length;
+      ingest(allText,title,'PDF Upload',S.pdfPages,wordCount,'PDF');
+      smsg('pdfStat',`✅ PDF loaded — ${S.pdfPages} pages rendered visually · ${Math.round(wordCount/1000)}k words extracted`,'s-ok');
+      document.getElementById('openVizBtn').style.display='inline-flex';
+
+    }catch(e){
+      smsg('pdfStat','❌ '+e.message,'s-err');
+      toast('❌ '+e.message);
+    }
+    return;
+  }
+  toast('Please upload PDF or TXT files');
+}
+
+function ingest(text,title,sub,pageCount,wordCount,type){
+  S.fullText=text;
+  const pages=[]; let rem=text;
+  while(rem.length>0){
+    if(rem.length<=2800){pages.push(rem);break;}
+    let cut=2800;
+    const pp=rem.lastIndexOf('\n\n',2800);if(pp>1800)cut=pp+2;
+    else{const sp=rem.lastIndexOf('. ',2800);if(sp>1800)cut=sp+2;}
+    pages.push(rem.substring(0,cut));rem=rem.substring(cut);
+  }
+  S.pages=pages; S.page=0; S.book={title,author:sub};
+  document.getElementById('bookPill').style.display='flex';
+  document.getElementById('pillTxt').textContent=title;
+  const bic=document.getElementById('bicCard'); bic.style.display='block';
+  document.getElementById('bicTitle').textContent=title;
+  document.getElementById('bicAuthor').textContent=sub;
+  document.getElementById('bicPages').textContent=pageCount+' pages';
+  document.getElementById('bicWords').textContent=Math.round(wordCount/1000)+'k words';
+  document.getElementById('bicType').textContent=type==='PDF'?'📄 PDF':'📝 Text';
+  renderPage();
+  document.getElementById('apPanel').style.display='block';
+}
+
+function renderPage(){
+  const d=document.getElementById('cDisp');
+  if(!S.pages.length)return;
+  d.textContent=S.pages[S.page]||'';
+  document.getElementById('pgInd').textContent=`Text block ${S.page+1} of ${S.pages.length}`;
+}
+function pgPrev(){if(S.page>0){S.page--;renderPage();}else toast('First page');}
+function pgNext(){if(S.page<S.pages.length-1){S.page++;renderPage();}else toast('Last page');}
+function pgGo(){const n=parseInt(document.getElementById('pgI').value)-1;if(isNaN(n)||n<0||n>=S.pages.length){toast('Invalid');return;}S.page=n;renderPage();}
+
+// ═══════════════════════════════════════════
+// PDF.js VISUAL VIEWER
+// ═══════════════════════════════════════════
+async function openPdfViewer(){
+  if(!S.pdfDoc){toast('Upload a PDF first');return;}
+  document.getElementById('pdfViewer').classList.add('open');
+  document.getElementById('pvTitle').textContent=S.book?.title||'PDF';
+  document.getElementById('pvMeta').textContent=`${S.pdfPages} pages`;
+  await renderPdfPage(S.pdfCurrentPage);
+}
+
+function closePdfViewer(){
+  document.getElementById('pdfViewer').classList.remove('open');
+  paStop();
+}
+
+async function renderPdfPage(pageNum){
+  const area=document.getElementById('pdfCanvasArea');
+  const spinner=document.getElementById('pdfLoadingSpinner');
+  spinner.style.display='flex';
+  area.innerHTML='';
+  area.appendChild(spinner);
+
+  try{
+    if(S.pdfSingleMode){
+      // Single page mode
+      await renderOnePage(pageNum,area);
+    } else {
+      // Render current + next 2 pages for smooth reading
+      const toRender=[pageNum];
+      if(pageNum+1<=S.pdfPages) toRender.push(pageNum+1);
+      for(let i=0;i<toRender.length;i++){
+        document.getElementById('pdfLoadFill').style.width=((i+1)/toRender.length*100)+'%';
+        await renderOnePage(toRender[i],area);
+      }
+    }
+  }catch(e){
+    area.innerHTML=`<div style="color:#FDF8F0;text-align:center;padding:2rem;">❌ Render error: ${e.message}</div>`;
+  }
+
+  spinner.style.display='none';
+  updPvFooter();
+}
+
+async function renderOnePage(pageNum,container){
+  const page=await S.pdfDoc.getPage(pageNum);
+  const viewport=page.getViewport({scale:S.pdfZoom});
+
+  const wrapper=document.createElement('div');
+  wrapper.className='pdf-page-wrap';
+  wrapper.style.width=viewport.width+'px';
+  wrapper.style.height=viewport.height+'px';
+
+  const canvas=document.createElement('canvas');
+  canvas.width=viewport.width;
+  canvas.height=viewport.height;
+  canvas.style.display='block';
+
+  const numLabel=document.createElement('div');
+  numLabel.className='pdf-page-num';
+  numLabel.textContent=`Page ${pageNum} of ${S.pdfPages}`;
+
+  wrapper.appendChild(canvas);
+  wrapper.appendChild(numLabel);
+  container.appendChild(wrapper);
+
+  const ctx=canvas.getContext('2d');
+  await page.render({canvasContext:ctx,viewport}).promise;
+}
+
+function updPvFooter(){
+  const pct=(S.pdfCurrentPage-1)/(Math.max(S.pdfPages-1,1))*100;
+  document.getElementById('pvProgFill').style.width=pct+'%';
+  document.getElementById('pvPageInfo').textContent=`Page ${S.pdfCurrentPage} of ${S.pdfPages}`;
+  document.getElementById('pvPrev').disabled=S.pdfCurrentPage<=1;
+  document.getElementById('pvNext').disabled=S.pdfCurrentPage>=S.pdfPages;
+  document.getElementById('zoomLbl').textContent=Math.round(S.pdfZoom*100)+'%';
+}
+
+async function pvPg(dir){
+  const step=S.pdfSingleMode?1:2;
+  S.pdfCurrentPage=Math.max(1,Math.min(S.pdfPages,S.pdfCurrentPage+(dir*step)));
+  await renderPdfPage(S.pdfCurrentPage);
+}
+
+function pvJump(e){
+  const pct=e.offsetX/e.currentTarget.offsetWidth;
+  S.pdfCurrentPage=Math.max(1,Math.round(pct*S.pdfPages));
+  renderPdfPage(S.pdfCurrentPage);
+}
+
+async function zoom(delta){
+  S.pdfZoom=Math.max(0.5,Math.min(3,S.pdfZoom+delta));
+  await renderPdfPage(S.pdfCurrentPage);
+}
+
+async function togglePdfSingleMode(){
+  S.pdfSingleMode=!S.pdfSingleMode;
+  document.getElementById('pvModeBtn').textContent=S.pdfSingleMode?'Two Pages':'Single Page';
+  document.getElementById('pvModeBtn').classList.toggle('act',S.pdfSingleMode);
+  await renderPdfPage(S.pdfCurrentPage);
+}
+
+function togglePdfAudio(){
+  const bar=document.getElementById('pdfAudioBar');
+  const btn=document.getElementById('pvListenBtn');
+  const show=bar.classList.toggle('show');
+  btn.classList.toggle('act',show);
+}
+
+// Keyboard navigation in PDF viewer
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('pdfViewer').classList.contains('open'))return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();pvPg(1);}
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();pvPg(-1);}
+  if(e.key==='+') zoom(0.25);
+  if(e.key==='-') zoom(-0.25);
+  if(e.key==='Escape') closePdfViewer();
+});
+
+// ═══════════════════════════════════════════
+// AUDIO ENGINE
+// ═══════════════════════════════════════════
+async function speakText(text,ctx){
+  if(!text||text.trim().length<5){toast('No text to speak');return;}
+  stopAudio();
+  if(S.oai){
+    try{await oaiSpeak(text.substring(0,4000),ctx);return;}
+    catch(e){console.warn('OpenAI TTS failed, using browser:',e.message);}
+  }
+  browserSpeak(text,ctx);
+}
+
+async function oaiSpeak(text,ctx){
+  const voice=(ctx==='pdf'?document.getElementById('paVsel'):document.getElementById('apVsel'))?.value||S.voice;
+  const speed=parseFloat((ctx==='pdf'?document.getElementById('paSpd'):document.getElementById('apSpd'))?.value||'1');
+  setAS('Generating audio…',true,ctx); setPB('⏸',ctx); S.playing=true;
+  const r=await fetch('https://api.openai.com/v1/audio/speech',{
+    method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.oai},
+    body:JSON.stringify({model:'tts-1',voice,input:text,speed})
+  });
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'TTS error');}
+  const url=URL.createObjectURL(await r.blob());
+  const a=new Audio(url); S.curAudio=a;
+  a.ontimeupdate=()=>{if(a.duration) setFill((a.currentTime/a.duration*100)+'%',ctx);};
+  a.onended=()=>{setAS('Done',false,ctx);setPB('▶',ctx);S.playing=false;setFill('100%',ctx);};
+  a.onerror=()=>{throw new Error('Audio error');};
+  setAS('Playing…',true,ctx); await a.play();
+}
+
+function browserSpeak(text,ctx){
+  if(!window.speechSynthesis){toast('Browser does not support speech');return;}
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text.substring(0,5000));
+  const sSel=ctx==='pdf'?document.getElementById('paSpd'):document.getElementById('apSpd');
+  u.rate=parseFloat(sSel?.value||'1'); u.pitch=1; u.volume=1;
+  const vs=window.speechSynthesis.getVoices();
+  const pv=vs.find(v=>v.lang.startsWith('en')&&(v.name.includes('Samantha')||v.name.includes('Karen')||v.name.includes('Google')||v.name.includes('Female')));
+  if(pv) u.voice=pv;
+  u.onstart=()=>{setAS('Speaking…',true,ctx);setPB('⏸',ctx);S.playing=true;};
+  u.onend=()=>{setAS('Done',false,ctx);setPB('▶',ctx);S.playing=false;setFill('100%',ctx);};
+  u.onerror=()=>{setAS('Error',false,ctx);setPB('▶',ctx);S.playing=false;};
+  window.speechSynthesis.speak(u);
+  setAS('Speaking…',true,ctx); setPB('⏸',ctx); S.playing=true;
+}
+
+function stopAudio(){
+  S.playing=false;
+  if(S.curAudio){S.curAudio.pause();S.curAudio=null;}
+  if(window.speechSynthesis)window.speechSynthesis.cancel();
+  setPB('▶','ap'); setPB('▶','pdf');
+  setAS('Stopped',false,'ap'); setAS('Stopped',false,'pdf');
+}
+
+function setPB(t,ctx){
+  if(ctx==='pdf') document.getElementById('paPlay').textContent=t;
+  else document.getElementById('apPlay').textContent=t;
+}
+function setAS(msg,on,ctx){
+  if(ctx==='pdf'){document.getElementById('paLbl').textContent=msg;document.getElementById('padot').classList.toggle('on',on);}
+  else{document.getElementById('apTxt').textContent=msg;document.getElementById('apDot').classList.toggle('on',on);}
+}
+function setFill(pct,ctx){
+  if(ctx==='pdf') document.getElementById('paFill').style.width=pct;
+  else document.getElementById('apFill').style.width=pct;
+}
+
+// PDF audio — reads current page text
+async function paToggle(){
+  if(S.playing){paStop();return;}
+  // Get text from current PDF page
+  if(S.pdfDoc){
+    try{
+      const pg=await S.pdfDoc.getPage(S.pdfCurrentPage);
+      const tc=await pg.getTextContent();
+      const txt=tc.items.map(x=>x.str).join(' ');
+      if(txt.trim().length>10){speakText(txt,'pdf');return;}
+    }catch(e){}
+  }
+  // Fallback to extracted text page
+  const t=S.pages[S.page]||''; if(!t){toast('No text found');return;}
+  speakText(t,'pdf');
+}
+function paStop(){stopAudio();}
+
+function apTogglePlay(){
+  if(S.playing){stopAudio();return;}
+  const t=S.pages[S.page]||S.fullText;
+  if(!t||t.length<10){toast('Load a book first');return;}
+  speakText(t,'ap');
+}
+function apStop(){stopAudio();}
+
+// ═══════════════════════════════════════════
+// WORD DEFINITION
+// ═══════════════════════════════════════════
+function onSel(){
+  const s=window.getSelection().toString().trim();
+  if(s&&s.split(' ').length<=2&&s.length<40) document.getElementById('wInp').value=s;
+}
+async function defineWord(){
+  const w=document.getElementById('wInp').value.trim(); if(!w){toast('Enter a word');return;}
+  const el=document.getElementById('defRes'); el.innerHTML='<em style="color:var(--inkl)">Looking up…</em>'; el.classList.add('show');
+  try{
+    const d=await claude('You are a Kindle dictionary with philosophical depth.',`Define "${w}": meaning, pronunciation hint, example sentence, Sanskrit/philosophical note if relevant. Max 80 words.`,200);
+    el.textContent=d;
+  }catch(e){el.textContent='Error: '+e.message;}
+}
+
+async function loadUrl(){
+  const url=document.getElementById('urlI').value.trim(); if(!url){toast('Enter a URL');return;}
+  toast('🌐 Analyzing…');
+  try{
+    const t=await claude('You help users access web content.', `User wants to read: ${url}\nExplain what this source contains if known, and give 3 steps to copy-paste the text as a TXT file for upload. Brief and practical.`,250);
+    ingest(t,'Web Content',url,1,t.split(' ').filter(Boolean).length,'Text');
+  }catch(e){toast('❌ '+e.message);}
+}
+
+// ═══════════════════════════════════════════
+// SUMMARIZE
+// ═══════════════════════════════════════════
+async function genSum(){
+  if(!S.ant){openSet();return;}
+  const ctx=S.fullText||document.getElementById('sumCtx').value;
+  if(!ctx||ctx.length<30){toast('Load a book or paste content first');return;}
+  ld('suml',1); smsg('sums','',''); document.getElementById('sumOut').innerHTML='';
+  const modes={
+    full:'Write a comprehensive overview: 1) Core premise, 2) Main themes (3-5), 3) Key takeaways, 4) Who benefits.',
+    chapter:'Write chapter-by-chapter summary. Each: title, 2-3 key points, main insight.',
+    insights:'Extract 7 most powerful insights. Each: insight clearly stated, why it matters, how to apply it.',
+    quotes:'Identify 8 most powerful quotable ideas as standalone statements with brief context.',
+    action:'Create a practical action plan: 10 specific actions from immediate to long-term.'
+  };
+  try{
+    const r=await claude('You are an expert book analyst. Create insightful, structured summaries.',
+      `Book: "${S.book?.title||'Unknown'}"\nContent:\n${ctx.substring(0,8000)}\nFocus: ${document.getElementById('sumCtx').value||'None'}\nTask: ${modes[S.sumMode]}`,2000);
+    S.lastSum=r; renderSum(r);
+  }catch(e){smsg('sums','❌ '+e.message,'s-err');}
+  ld('suml',0);
+}
+function renderSum(text){
+  const paras=text.split('\n\n').filter(s=>s.trim());
+  const html=paras.map(p=>{
+    const ls=p.trim().split('\n');const hd=ls[0].replace(/^#+\s*/,'').replace(/\*\*/g,'');
+    if(ls.length>1){const bd=ls.slice(1).join('\n').replace(/\*\*/g,'').replace(/\*/g,'');
+      return `<div class="sum-sec"><h4>${hd}</h4><p>${bd.replace(/\n/g,'<br>')}</p></div>`;}
+    return `<p style="font-size:.86rem;color:var(--inkm);line-height:1.75;margin-bottom:7px;">${p.replace(/\*\*/g,'').replace(/\*/g,'')}</p>`;
+  }).join('');
+  document.getElementById('sumOut').innerHTML=`<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:7px;"><div class="card-title" style="margin:0;">📄 ${esc(S.book?.title||'Summary')}</div><div style="display:flex;gap:7px;"><button class="btn btn-g btn-sm" onclick="listenSum()">🔊 Listen</button><button class="btn btn-g btn-sm" onclick="copySum()">📋 Copy</button></div></div>${html}</div>`;
+}
+function listenSum(){if(!S.lastSum){toast('Generate summary first');return;}speakText(S.lastSum,'ap');}
+function copySum(){if(!S.lastSum){toast('Nothing to copy');return;}navigator.clipboard.writeText(S.lastSum).then(()=>toast('✅ Copied!'));}
+
+// ═══════════════════════════════════════════
+// COURSE BUILDER
+// ═══════════════════════════════════════════
+function setScope(scope,btn){
+  S.courseScope=scope;
+  document.querySelectorAll('.scope-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const extra=document.getElementById('scopeExtra');
+  const lbl=document.getElementById('scopeLabel');
+  if(scope==='chapter'){extra.style.display='block';lbl.textContent='Which chapter?';document.getElementById('scopeVal').placeholder='e.g. Chapter 3: The Self';}
+  else if(scope==='topic'){extra.style.display='block';lbl.textContent='What topic?';document.getElementById('scopeVal').placeholder='e.g. Pranayama, Leadership through vulnerability';}
+  else{extra.style.display='none';}
+}
+
+async function buildCourse(){
+  if(!S.ant){openSet();return;}
+  const title=S.book?.title||'the book';
+  const dur=document.getElementById('cDur').value;
+  const type=document.getElementById('cType').value;
+  const aud=document.getElementById('cAud').value;
+  const sess=document.getElementById('cSess').value;
+  const extra=document.getElementById('cExtra').value;
+  const scopeVal=document.getElementById('scopeVal')?.value||'';
+  const isOneClass=dur==='1class';
+  const days=isOneClass?1:parseInt(dur);
+  const ctx=S.fullText.substring(0,2500);
+  const scopeDesc=S.courseScope==='chapter'?`Focus ONLY on chapter: ${scopeVal||'first chapter'}`:
+                  S.courseScope==='topic'?`Focus ONLY on topic: ${scopeVal||type}`:'Cover the entire book';
+  ld('coul',1); smsg('cous','',''); document.getElementById('couOut').innerHTML='';
+  try{
+    if(isOneClass){
+      const r=await claude('You are an expert curriculum designer. Return ONLY valid JSON, no markdown.',
+        `Create a single class session based on "${title}" for ${type}.\nAudience: ${aud}, Duration: ${sess}\nScope: ${scopeDesc}${extra?'\nNotes: '+extra:''}\nContext: ${ctx}\n\nReturn ONLY this JSON:\n{"sessionTitle":"","objective":"","outline":[{"time":"","activity":""}],"openingQuote":"","closingPractice":"","handoutPoints":["","",""],"materials":""}`,1200);
+      const c=r.replace(/```json|```/g,'').trim();
+      const si=c.indexOf('{'),ei=c.lastIndexOf('}');
+      renderSingleClass(JSON.parse(c.substring(si,ei+1)));
+    } else {
+      const allDays=[]; const batch=Math.min(days,3);
+      while(allDays.length<days){
+        const s=allDays.length+1,e=Math.min(s+batch-1,days),n=e-s+1;
+        const r=await claude('You are an expert curriculum designer. Return ONLY a valid JSON array, no markdown.',
+          `Create days ${s}-${e} of a ${days}-day ${type} course based on "${title}".\nAudience: ${aud}, Session: ${sess}\nScope: ${scopeDesc}${extra?'\nNotes: '+extra:''}\nContext: ${ctx}\n\nReturn ONLY a JSON array of ${n} objects:\n[{"day":${s},"theme":"short theme","objective":"goal","openingPractice":"opening","mainContent":"key teaching","activities":"activity","reflection":"reflection","quote":"quote"}]\nKeep ALL values under 50 words.`,1600);
+        const c=r.replace(/```json|```/g,'').trim();
+        const si=c.indexOf('['),ei=c.lastIndexOf(']');
+        if(si<0||ei<0) throw new Error('Invalid JSON on days '+s+'-'+e);
+        allDays.push(...JSON.parse(c.substring(si,ei+1)));
+        if(allDays.length<days) smsg('cous',`✅ Days ${s}–${e} done, generating more…`,'s-inf');
+      }
+      const sl=S.courseScope==='chapter'?` (${scopeVal})`:S.courseScope==='topic'?` — Topic: ${scopeVal}`:'';
+      S.lastCourseJSON={title:`${days}-Day ${type} Course${sl}`,overview:`${days}-day ${aud} curriculum from "${title}". ${scopeDesc}.`,days:allDays.slice(0,days)};
+      S.lastCourseTxt=allDays.map(d=>`Day ${d.day}: ${d.theme}. ${d.objective}. ${d.mainContent}`).join('. ');
+      smsg('cous','',''); renderCourse(S.lastCourseJSON);
+    }
+  }catch(e){smsg('cous','❌ '+e.message,'s-err');}
+  ld('coul',0);
+}
+
+function renderSingleClass(d){
+  S.lastCourseTxt=`${d.sessionTitle}. ${d.objective}. ${(d.outline||[]).map(o=>o.activity).join('. ')}`;
+  document.getElementById('couOut').innerHTML=`
+    <div class="card" style="margin-bottom:1rem;">
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:800;margin-bottom:.4rem;">${esc(d.sessionTitle)}</h2>
+      <p style="font-size:.85rem;color:var(--inkm);line-height:1.6;margin-bottom:1rem;">${esc(d.objective)}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;">
+        <div>
+          <div style="font-size:.71rem;font-weight:700;color:var(--sage-d);text-transform:uppercase;margin-bottom:5px;">📋 Class Outline</div>
+          <table style="width:100%;border-collapse:collapse;font-size:.81rem;">
+            ${(d.outline||[]).map(o=>`<tr><td style="padding:5px 7px;border-bottom:1px solid var(--border);color:var(--sage-d);font-weight:600;white-space:nowrap;width:90px;">${esc(o.time)}</td><td style="padding:5px 7px;border-bottom:1px solid var(--border);color:var(--inkm);">${esc(o.activity)}</td></tr>`).join('')}
+          </table>
+        </div>
+        <div>
+          <div style="margin-bottom:11px;"><div style="font-size:.71rem;font-weight:700;color:var(--amber-d);text-transform:uppercase;margin-bottom:3px;">💬 Opening Quote</div><div style="font-style:italic;font-size:.83rem;color:var(--inkm);">"${esc(d.openingQuote)}"</div></div>
+          <div style="margin-bottom:11px;"><div style="font-size:.71rem;font-weight:700;color:var(--terra);text-transform:uppercase;margin-bottom:3px;">🌙 Closing Practice</div><div style="font-size:.82rem;color:var(--inkm);">${esc(d.closingPractice)}</div></div>
+          <div><div style="font-size:.71rem;font-weight:700;color:var(--sky);text-transform:uppercase;margin-bottom:3px;">📌 Handout Points</div>
+            <ul style="margin-left:1rem;font-size:.81rem;color:var(--inkm);">${(d.handoutPoints||[]).map(p=>`<li style="margin-bottom:2px;">${esc(p)}</li>`).join('')}</ul>
+          </div>
+        </div>
+      </div>
+      ${d.materials?`<div style="margin-top:11px;background:rgba(232,168,56,.08);border-radius:8px;padding:9px 12px;font-size:.82rem;color:var(--inkm);"><strong>📦 Materials:</strong> ${esc(d.materials)}</div>`:''}
+    </div>`;
+}
+
+function renderCourse(c){
+  const cols=['var(--sage-d)','var(--amber-d)','var(--terra)','var(--sky)','#8B1A6B','var(--sage)','var(--amber)'];
+  document.getElementById('couOut').innerHTML=`
+    <div class="card" style="margin-bottom:1rem;">
+      <h2 style="font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:800;margin-bottom:.4rem;">${esc(c.title)}</h2>
+      <p style="font-size:.85rem;color:var(--inkm);line-height:1.6;">${esc(c.overview)}</p>
+    </div>
+    <div class="course-out">
+      ${c.days.map((d,i)=>`
+        <div class="day-block">
+          <div class="day-hdr" onclick="td(${i})"><h3 style="color:${cols[i%cols.length]}">Day ${d.day}: ${esc(d.theme)}</h3><span id="ar${i}" style="color:var(--inkl);font-size:.77rem;">▼</span></div>
+          <div class="day-body" id="db${i}">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:9px;">
+              <div class="dsec"><div class="dlabel" style="color:${cols[i%cols.length]}">🎯 Objective</div><div>${esc(d.objective)}</div></div>
+              <div class="dsec"><div class="dlabel" style="color:var(--amber-d)">💬 Quote</div><div style="font-style:italic;">"${esc(d.quote)}"</div></div>
+            </div>
+            <div class="dsec"><div class="dlabel" style="color:var(--terra)">🌅 Opening</div><div>${esc(d.openingPractice)}</div></div>
+            <div class="dsec" style="margin-top:7px;"><div class="dlabel" style="color:var(--sky)">📚 Main Content</div><div>${esc(d.mainContent)}</div></div>
+            <div class="dsec" style="margin-top:7px;"><div class="dlabel" style="color:var(--rose)">✋ Activities</div><div>${esc(d.activities)}</div></div>
+            <div style="background:rgba(232,168,56,.08);border-radius:8px;padding:9px 12px;margin-top:7px;"><div class="dlabel" style="color:var(--amber-d);margin-bottom:2px;">🌙 Reflection</div><div>${esc(d.reflection)}</div></div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  td(0);
+}
+function td(i){const b=document.getElementById('db'+i),a=document.getElementById('ar'+i);if(!b)return;const o=b.classList.toggle('open');if(a)a.textContent=o?'▲':'▼';}
+function listenCourse(){if(!S.lastCourseTxt){toast('Build a course first');return;}speakText(S.lastCourseTxt,'ap');}
+function dlCourse(){
+  if(!S.lastCourseJSON){toast('Build a course first');return;}
+  const c=S.lastCourseJSON;let t=`${c.title}\n${'='.repeat(Math.min(c.title.length,60))}\n\n${c.overview}\n\n`;
+  c.days.forEach(d=>{t+=`DAY ${d.day}: ${d.theme}\n${'-'.repeat(40)}\nObjective: ${d.objective}\nQuote: "${d.quote}"\n\nOpening: ${d.openingPractice}\nMain Content: ${d.mainContent}\nActivities: ${d.activities}\nReflection: ${d.reflection}\n\n`;});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));
+  a.download=c.title.replace(/[^a-z0-9]/gi,'_').substring(0,50)+'.txt';a.click();toast('✅ Downloaded!');
+}
+
+// ═══════════════════════════════════════════
+// SOCIAL CONTENT
+// ═══════════════════════════════════════════
+
+// Platform labels checked state
+const PLATS={yt:{id:'ytC',label:'YouTube',prompt:'YouTube script 200 words: catchy hook, intro, 3 key points, strong CTA'},ig:{id:'igC',label:'Instagram',prompt:'Instagram caption 100 words: hook, value, CTA, 10 relevant hashtags'},li:{id:'liC',label:'LinkedIn',prompt:'LinkedIn post 150 words: insight, personal story, lesson, engagement question'},tw:{id:'twC',label:'Twitter/X',prompt:'Twitter/X thread of 5 tweets numbered 1/ to 5/ each under 280 chars'}};
+
+function updPlat(p){
+  const chk=document.getElementById('chk-'+p);
+  const lbl=document.getElementById('lbl-'+p);
+  lbl.style.borderColor=chk.checked?'var(--sage)':'var(--border)';
+  lbl.style.background=chk.checked?'rgba(124,154,126,.08)':'var(--cream)';
+  lbl.style.color=chk.checked?'var(--sage-d)':'var(--inkm)';
+  // Show/hide card
+  const card=document.getElementById('card-'+p);
+  if(card) card.style.display=chk.checked?'':'none';
+  updGenHint();
+}
+
+function selAllPlat(val){
+  ['yt','ig','li','tw'].forEach(p=>{
+    document.getElementById('chk-'+p).checked=val;
+    updPlat(p);
+  });
+}
+
+function updGenHint(){
+  const sel=['yt','ig','li','tw'].filter(p=>document.getElementById('chk-'+p).checked);
+  document.getElementById('genContHint').textContent=sel.length===0?'⚠️ Select at least one platform':sel.length+' platform'+(sel.length>1?'s':'')+' selected';
+  document.getElementById('genContBtn').textContent='🚀 Generate '+(sel.length===4?'All':'Selected');
+}
+
+// Init checkbox styles on load
+window.addEventListener('load',()=>{
+  ['yt','ig','li','tw'].forEach(p=>updPlat(p));
+});
+
+function getSelPlatforms(){
+  return ['yt','ig','li','tw'].filter(p=>document.getElementById('chk-'+p).checked);
+}
+
+function buildPrompt(plats){
+  const parts=plats.map(p=>`"${p}":"${PLATS[p].prompt}"`).join(',');
+  return `{${plats.map(p=>`"${p}":""`).join(',')}}`; // schema
+}
+
+async function genContent(){
+  if(!S.ant){openSet();return;}
+  const sel=getSelPlatforms();
+  if(!sel.length){toast('Select at least one platform');return;}
+  const title=S.book?.title||'the book';
+  ld('contl',1); smsg('conts','','');
+  const platInstructions=sel.map(p=>`"${p}":"${PLATS[p].prompt}"`).join(',\n');
+  try{
+    const r=await claude('You are a top social media strategist. Return ONLY valid JSON, no markdown.',
+      `Create social content based on "${title}" for a ${document.getElementById('cNiche').value} creator.\nFocus: ${document.getElementById('cFocus').value}\nTopic: ${document.getElementById('cPass').value||'key insights'}\nContext: ${S.fullText.substring(0,2500)}\n\nGenerate ONLY these platforms:\n${platInstructions}\n\nReturn ONLY valid JSON with these keys (plus "tip"):\n{"tip":"2 sentences on best content angles",${sel.map(p=>`"${p}":"content here"`).join(',')}}`,1600);
+    const cl=r.replace(/```json|```/g,'').trim();
+    const si=cl.indexOf('{'),ei=cl.lastIndexOf('}');
+    const d=JSON.parse(cl.substring(si,ei+1));
+    if(d.tip){document.getElementById('cSugW').style.display='block';document.getElementById('cSug').textContent=d.tip;}
+    sel.forEach(p=>{if(d[p]) document.getElementById(PLATS[p].id).textContent=d[p];});
+    toast(`✅ Generated for ${sel.length} platform${sel.length>1?'s':''}!`);
+  }catch(e){smsg('conts','❌ '+e.message,'s-err');}
+  ld('contl',0);
+}
+
+// Regenerate a single platform
+async function genOne(p){
+  if(!S.ant){openSet();return;}
+  const title=S.book?.title||'the book';
+  const btn=document.getElementById('gen-'+p);
+  const el=document.getElementById(PLATS[p].id);
+  const origTxt=btn.textContent; btn.textContent='…'; btn.disabled=true;
+  el.style.opacity='.5';
+  try{
+    const r=await claude('You are a top social media strategist. Return ONLY the content text, no JSON wrapper, no labels.',
+      `Create ${PLATS[p].label} content based on "${title}" for a ${document.getElementById('cNiche').value} creator.\nFocus: ${document.getElementById('cFocus').value}\nTopic: ${document.getElementById('cPass').value||'key insights'}\nContext: ${S.fullText.substring(0,2500)}\n\nInstruction: ${PLATS[p].prompt}\n\nReturn ONLY the content text.`,700);
+    el.textContent=r;
+    toast(`✅ ${PLATS[p].label} regenerated!`);
+  }catch(e){toast('❌ '+e.message);}
+  btn.textContent=origTxt; btn.disabled=false; el.style.opacity='1';
+}
+
+// Listen/Stop toggle per platform
+function listenToggle(elId,btnId){
+  const text=document.getElementById(elId)?.innerText||'';
+  const btn=document.getElementById(btnId);
+  if(!text||text.includes('Generate content first')){toast('Generate content first');return;}
+  if(S.playing){
+    stopAudio();
+    btn.textContent='🔊 Listen';
+    // Reset all listen buttons
+    ['lis-yt','lis-ig','lis-li','lis-tw'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent='🔊 Listen';});
+    return;
+  }
+  // Reset all first
+  ['lis-yt','lis-ig','lis-li','lis-tw'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent='🔊 Listen';});
+  btn.textContent='⏹ Stop';
+  speakText(text,'ap');
+  // Auto-reset button when done
+  const checkDone=setInterval(()=>{if(!S.playing){btn.textContent='🔊 Listen';clearInterval(checkDone);}},500);
+}
+
+function cpEl(id){const t=document.getElementById(id)?.innerText||'';if(!t||t.includes('Generate content first')){toast('Generate content first');return;}navigator.clipboard.writeText(t).then(()=>toast('✅ Copied!'));}
+function lisEl(id){const t=document.getElementById(id)?.innerText||'';if(!t||t.includes('Generate content first')){toast('Generate content first');return;}speakText(t,'ap');}
+
+// ═══════════════════════════════════════════
+// NOTES
+// ═══════════════════════════════════════════
+function saveQNote(){const t=document.getElementById('qNote').value.trim();if(!t){toast('Write something first');return;}push(t);document.getElementById('qNote').value='';toast('📝 Saved!');}
+function addNote(){const t=document.getElementById('nNote').value.trim();if(!t){toast('Write something first');return;}push(t);document.getElementById('nNote').value='';renderNotes();toast('📝 Saved!');}
+function push(text){S.notes.unshift({id:Date.now(),text,book:S.book?.title||'General',time:new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})});localStorage.setItem('bf_notes',JSON.stringify(S.notes));renderNotes();}
+function delNote(id){S.notes=S.notes.filter(n=>n.id!==id);localStorage.setItem('bf_notes',JSON.stringify(S.notes));renderNotes();toast('🗑 Deleted');}
+function renderNotes(){
+  const c=document.getElementById('notesList');if(!c)return;
+  if(!S.notes.length){c.innerHTML=`<div class="empty-s"><div class="ei">📝</div><h3>No notes yet</h3><p>Save notes while reading</p></div>`;return;}
+  c.innerHTML=S.notes.map(n=>`<div class="note-item"><button class="ndel" onclick="delNote(${n.id})">✕</button><div style="font-size:.73rem;font-weight:600;color:var(--sage-d);margin-bottom:2px;">📚 ${esc(n.book)}</div><div>${esc(n.text)}</div><div class="note-meta">${n.time}</div></div>`).join('');
+}
+function expNotes(){if(!S.notes.length){toast('No notes');return;}const t=S.notes.map(n=>`[${n.book} — ${n.time}]\n${n.text}`).join('\n\n---\n\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download='BookForge_Notes.txt';a.click();toast('✅ Exported!');}
+function clearNotes(){if(!confirm('Clear all notes?'))return;S.notes=[];localStorage.setItem('bf_notes','[]');renderNotes();toast('🗑 Cleared');}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function ld(id,on){document.getElementById(id)?.classList.toggle('active',!!on);}
+function smsg(id,msg,cls){const el=document.getElementById(id);if(!el)return;if(!msg){el.className='smsg';return;}el.textContent=msg;el.className='smsg show '+(cls||'');}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
+</script>
+</body>
+</html>
